@@ -14,13 +14,21 @@ from transformers import set_seed, AutoTokenizer, AutoModelForQuestionAnswering,
 
 from data import preprocess_training_examples, preprocess_validation_examples, post_processing_function
 from trainer_qa import QuestionAnsweringTrainer
-from modeling import RobertaBiGRUForQuestionAnswering
+from modeling import RobertaBiGRUForQuestionAnswering, ElectraBiGRUForQuestionAnswering
 
 os.environ['CUDA_VISIBLE_DEVICES'] = "1"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 datasets.logging.set_verbosity_error()
 transformers.logging.set_verbosity_error()
+
+MODEL_FOR_QUESTION_ANSWERING = {
+    "klue_roberta_base": AutoModelForQuestionAnswering,
+    "klue_roberta_bi_gru": RobertaBiGRUForQuestionAnswering,
+    "klue_roberta_large": AutoModelForQuestionAnswering,
+    "koelectra_base": AutoModelForQuestionAnswering,
+    "koelectra_bi_gru": ElectraBiGRUForQuestionAnswering,
+}
 
 def main(cli_args):
     # [학습을 위한 Arguments 준비]
@@ -32,12 +40,12 @@ def main(cli_args):
 
     # [CheckPoint 경로 설정]
     now = datetime.now().strftime('%y%m%d%H%M')  # 연월일시분
-    under_ckpt_dir = f"{cli_args.config_file.split('.')[0]}_{now}"
+    under_ckpt_dir = f"{args.model_type}_{now}"
     args.ckpt_dir = os.path.join(args.ckpt_dir, under_ckpt_dir)
 
     # [Model & Tokenizer 불러오기]
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path)
-    model = RobertaBiGRUForQuestionAnswering.from_pretrained(args.model_name_or_path)
+    model = MODEL_FOR_QUESTION_ANSWERING[args.model_type].from_pretrained(args.model_name_or_path)
 
     # [Dataset 불러오기]
     if args.dataset_name is not None:
@@ -58,20 +66,29 @@ def main(cli_args):
         preprocess_training_examples,
         batched=True,
         remove_columns=raw_datasets["train"].column_names,
-        fn_kwargs={"tokenizer": tokenizer, "max_length": args.max_seq_length, "stride": args.doc_stride}
+        fn_kwargs={"tokenizer": tokenizer,
+                   "max_length": args.max_seq_length,
+                   "stride": args.doc_stride,
+                   "roberta": args.roberta}
     )
     eval_dataset = raw_datasets["validation"].map(
         preprocess_validation_examples,
         batched=True,
         remove_columns=raw_datasets["validation"].column_names,
-        fn_kwargs={"tokenizer": tokenizer, "max_length": args.max_seq_length, "stride": args.doc_stride}
+        fn_kwargs={"tokenizer": tokenizer,
+                   "max_length": args.max_seq_length,
+                   "stride": args.doc_stride,
+                   "roberta": args.roberta}
     )
     if args.do_eval:
         test_dataset = raw_datasets["test"].map(
             preprocess_validation_examples,
             batched=True,
             remove_columns=raw_datasets["test"].column_names,
-            fn_kwargs={"tokenizer": tokenizer, "max_length": args.max_seq_length, "stride": args.doc_stride}
+            fn_kwargs={"tokenizer": tokenizer,
+                       "max_length": args.max_seq_length,
+                       "stride": args.doc_stride,
+                       "roberta": args.roberta}
         )
 
     data_collator = DataCollatorWithPadding(tokenizer, pad_to_multiple_of=8 if args.fp16 else None)

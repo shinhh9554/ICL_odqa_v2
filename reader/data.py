@@ -5,7 +5,7 @@ from tqdm.auto import tqdm
 from transformers import EvalPrediction
 
 
-def preprocess_training_examples(examples, tokenizer, max_length, stride):
+def preprocess_training_examples(examples, tokenizer, max_length, stride, roberta):
     questions = [q.strip() for q in examples["question"]]
     inputs = tokenizer(
         questions,
@@ -15,7 +15,7 @@ def preprocess_training_examples(examples, tokenizer, max_length, stride):
         stride=stride,
         return_overflowing_tokens=True,
         return_offsets_mapping=True,
-        return_token_type_ids=False, # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
+        return_token_type_ids=not roberta, # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
         padding="max_length",
     )
 
@@ -59,7 +59,7 @@ def preprocess_training_examples(examples, tokenizer, max_length, stride):
     return inputs
 
 
-def preprocess_validation_examples(examples, tokenizer, max_length, stride):
+def preprocess_validation_examples(examples, tokenizer, max_length, stride, roberta):
     questions = [q.strip() for q in examples["question"]]
     inputs = tokenizer(
         questions,
@@ -69,7 +69,7 @@ def preprocess_validation_examples(examples, tokenizer, max_length, stride):
         stride=stride,
         return_overflowing_tokens=True,
         return_offsets_mapping=True,
-        return_token_type_ids=False,  # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
+        return_token_type_ids=not roberta,  # roberta모델을 사용할 경우 False, bert를 사용할 경우 True로 표기해야합니다.
         padding="max_length",
     )
 

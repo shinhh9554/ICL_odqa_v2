@@ -1,6 +1,6 @@
 {
   "model_name_or_path": "monologg/koelectra-base-v3-discriminator",
-  "model_type": "koelectra_base",
+  "model_type": "koelectra_bi_gru",
   "dataset_name": null,
   "dataset_config_name": null,
   "train_file": "data/train",
